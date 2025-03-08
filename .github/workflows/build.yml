@@ -1,10 +1,10 @@
-name: Build Samsung A51 Kernel
+name: Build Samsung stock Kernel
 
 on:
   push:
     branches:
       - main
-  pull_request:
+  pull_request: 
     branches:
       - main
   workflow_dispatch:
@@ -12,10 +12,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+   
+   
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up environment
         run: |
@@ -29,21 +32,22 @@ jobs:
             bc \
             git \
             wget \
-            curl
+            curl  \
+            zstd  
 
-      - name: Set up Proton Clang-10
+
+       name: Set up Proton Clang-10
         run: |
           mkdir -p toolchain
           cd toolchain
-          wget https://github.com/kdrag0n/proton-clang/archive/refs/tags/20201010.tar.gz -O proton-clang-10.tar.gz
-          tar -xzf proton-clang-10.tar.gz
+          wget https://github.com/kdrag0n/proton-clang-build/releases/download/20190728/proton_clang-20190728-45d910de.tar.zst
+          tar -xvf proton_clang-20190728-45d910de.tar.zst
           rm proton-clang-10.tar.gz
           export PATH="$(pwd)/proton-clang-20201010/bin:$PATH"
           export CROSS_COMPILE=aarch64-linux-gnu-
           export ARCH=arm64
           export PLATFORM_VERSION=13
-
-      - name: Build kernel
+- name: Build kernel
         run: |
           make exynos9610_a51xx_defconfig
           make -j$(nproc) CC=clang LD=ld.lld
@@ -59,10 +63,12 @@ jobs:
 
       - name: Upload build artifacts
         if: steps.check_files.outputs.artifacts_exist == 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: kernel-build
           path: |
             arch/arm64/boot/Image
             arch/arm64/boot/dtb.img
             arch/arm64/boot/dts/exynos/*.dtbo
+
+          
